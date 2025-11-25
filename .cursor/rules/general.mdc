@@ -1,0 +1,52 @@
+# WORK21 — Общие правила для Cursor
+
+## Проект
+
+WORK21 — платформа, соединяющая студентов Школы 21 с заказчиками.
+Основной язык бэкенда: Python (FastAPI).
+Фронтенд: Next.js 14 + React 18 + TypeScript.
+
+## Структура монорепо
+
+- `backend/` — Python FastAPI сервис
+- `frontend/` — Next.js приложение  
+- `docs/` — документация
+- `.cursor/` — правила Cursor
+
+## Стиль кода
+
+### Python (Backend)
+- PEP 8, black formatter
+- Type hints везде
+- Docstrings для публичных функций
+- Async/await для I/O операций
+
+### TypeScript (Frontend)
+- ESLint + Prettier
+- Функциональные компоненты с hooks
+- Строгая типизация (no any)
+
+## AI-агенты
+
+Три ключевых агента:
+1. Task Analyst — анализ задач → ТЗ
+2. Talent Matcher — подбор студентов
+3. Legal Assistant — договоры
+
+## Роли пользователей
+
+- `student` — студент Школы 21
+- `customer` — заказчик (бизнес/госструктура)
+- `admin` — администратор платформы
+
+## База данных
+
+- Production: PostgreSQL
+- Development: SQLite
+- ORM: SQLAlchemy 2.0
+
+## API
+
+- REST, версионирование: /api/v1/
+- JWT аутентификация
+- Pydantic для валидации
