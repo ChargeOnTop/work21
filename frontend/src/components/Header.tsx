@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, X, Zap } from 'lucide-react'
+import { Menu, X, Zap, User } from 'lucide-react'
+import { useAuth } from '@/lib/auth-context'
 
 const navigation = [
   { name: 'Главная', href: '/' },
@@ -13,6 +14,7 @@ const navigation = [
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { user, isAuthenticated, isLoading } = useAuth()
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-work21-dark/80 backdrop-blur-xl border-b border-work21-border">
@@ -44,12 +46,30 @@ export default function Header() {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-4">
-            <Link href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">
-              Войти
-            </Link>
-            <Link href="/register" className="btn-primary text-sm">
-              Начать
-            </Link>
+            {isLoading ? (
+              <div className="w-5 h-5 border-2 border-gray-600 border-t-white rounded-full animate-spin" />
+            ) : isAuthenticated && user ? (
+              <Link 
+                href="/dashboard" 
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-work21-card border border-work21-border hover:border-accent-green/50 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full bg-accent-green/20 flex items-center justify-center">
+                  <span className="text-accent-green text-sm font-semibold">
+                    {user.first_name[0]}{user.last_name[0]}
+                  </span>
+                </div>
+                <span className="text-sm text-white">{user.first_name}</span>
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">
+                  Войти
+                </Link>
+                <Link href="/register" className="btn-primary text-sm">
+                  Начать
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -81,12 +101,24 @@ export default function Header() {
                 </Link>
               ))}
               <div className="flex gap-4 pt-4 border-t border-work21-border">
-                <Link href="/login" className="btn-secondary text-sm flex-1 text-center">
-                  Войти
-                </Link>
-                <Link href="/register" className="btn-primary text-sm flex-1 text-center">
-                  Начать
-                </Link>
+                {isAuthenticated && user ? (
+                  <Link 
+                    href="/dashboard" 
+                    className="btn-primary text-sm flex-1 text-center"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Личный кабинет
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/login" className="btn-secondary text-sm flex-1 text-center">
+                      Войти
+                    </Link>
+                    <Link href="/register" className="btn-primary text-sm flex-1 text-center">
+                      Начать
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>
