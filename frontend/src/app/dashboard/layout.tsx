@@ -110,11 +110,20 @@ export default function DashboardLayout({
         {/* User Info & Logout */}
         <div className="p-4 border-t border-work21-border">
           <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-work21-dark/50 mb-3">
-            <div className="w-10 h-10 rounded-full bg-accent-green/20 flex items-center justify-center">
-              <span className="text-accent-green font-semibold">
-                {user.first_name[0]}{user.last_name[0]}
-              </span>
-            </div>
+            {user.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt={`${user.first_name} ${user.last_name}`}
+                className="w-10 h-10 rounded-full object-cover border border-work21-border"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-accent-green/20 flex items-center justify-center">
+                <span className="text-accent-green font-semibold">
+                  {user.first_name[0]}
+                  {user.last_name[0]}
+                </span>
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <div className="font-medium text-white truncate">
                 {user.first_name} {user.last_name}
@@ -157,6 +166,20 @@ export default function DashboardLayout({
                 <span className="font-medium">{user.rating_score.toFixed(1)}</span>
               </div>
             )}
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-work21-border bg-work21-dark flex items-center justify-center">
+              {user.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={`${user.first_name} ${user.last_name}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-sm font-semibold text-white">
+                  {user.first_name[0]}
+                  {user.last_name[0]}
+                </span>
+              )}
+            </div>
           </div>
         </header>
 
