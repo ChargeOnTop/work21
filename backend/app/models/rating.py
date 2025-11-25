@@ -41,3 +41,4 @@ class Rating(Base):
     def __repr__(self) -> str:
         return f"<Rating project={self.project_id} score={self.score}>"
 
+

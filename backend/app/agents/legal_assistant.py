@@ -209,3 +209,4 @@ class LegalAssistantAgent:
             "fee_rate": self.PLATFORM_FEE_RATE
         }
 
+

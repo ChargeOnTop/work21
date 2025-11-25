@@ -110,3 +110,4 @@ async def get_leaderboard(
     
     return result.scalars().all()
 
+

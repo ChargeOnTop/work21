@@ -160,3 +160,4 @@ class TalentMatcherAgent:
         # TODO: Реализовать ранжирование заявок
         pass
 
+

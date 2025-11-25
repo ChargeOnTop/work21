@@ -153,3 +153,4 @@ async def get_user_ratings(
     
     return result.scalars().all()
 
+

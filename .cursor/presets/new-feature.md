@@ -42,3 +42,4 @@ frontend/src/
 - TypeScript: strict mode, функциональные компоненты
 - Commit messages: на русском, краткие и понятные
 
+

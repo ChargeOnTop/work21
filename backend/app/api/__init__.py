@@ -12,3 +12,4 @@ api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(projects.router, prefix="/projects", tags=["projects"])
 api_router.include_router(ratings.router, prefix="/ratings", tags=["ratings"])
 
+

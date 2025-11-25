@@ -115,3 +115,4 @@ Jobs (id, company_id, title, requirements, salary_range)
 - Celery для фоновых задач (AI-агенты)
 - PostgreSQL read replicas для чтения
 
+

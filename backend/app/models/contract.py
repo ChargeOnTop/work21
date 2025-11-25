@@ -58,3 +58,4 @@ class Contract(Base):
     def __repr__(self) -> str:
         return f"<Contract project={self.project_id} ({self.status.value})>"
 
+

@@ -116,3 +116,4 @@ class ApplicationStatusUpdate(BaseModel):
     """Схема для обновления статуса заявки"""
     status: ApplicationStatus
 
+

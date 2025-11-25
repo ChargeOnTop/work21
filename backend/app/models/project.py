@@ -154,3 +154,4 @@ class Application(Base):
     def __repr__(self) -> str:
         return f"<Application student={self.student_id} project={self.project_id}>"
 
+
