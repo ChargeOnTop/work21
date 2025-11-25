@@ -5,10 +5,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.core.config import settings
 from app.core.database import init_db
 from app.api import api_router
+from app.admin import create_admin
 
 
 @asynccontextmanager
@@ -47,6 +49,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Session middleware (для админ-панели)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key="session-secret-key-change-in-production"
+)
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -59,6 +67,9 @@ app.add_middleware(
 # Подключаем роутеры
 app.include_router(api_router, prefix="/api/v1")
 
+# Админ-панель (доступна по /admin)
+admin = create_admin(app)
+
 
 @app.get("/", tags=["root"])
 async def root():
@@ -70,6 +81,7 @@ async def root():
         "version": settings.app_version,
         "docs": "/docs",
         "redoc": "/redoc",
+        "admin": "/admin",
     }
 
 
