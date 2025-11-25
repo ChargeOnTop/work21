@@ -49,12 +49,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Session middleware (для админ-панели)
-app.add_middleware(
-    SessionMiddleware,
-    secret_key="session-secret-key-change-in-production"
-)
-
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -62,6 +56,14 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Session middleware (для админ-панели) - должен быть ПОСЛЕ CORS
+app.add_middleware(
+    SessionMiddleware,
+    secret_key="super-secret-session-key-work21-admin",
+    same_site="lax",
+    https_only=False,
 )
 
 # Подключаем роутеры

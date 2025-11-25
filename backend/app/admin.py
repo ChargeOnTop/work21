@@ -19,7 +19,7 @@ from app.models.contract import Contract
 class AdminAuth(AuthenticationBackend):
     """
     Простая аутентификация для админ-панели.
-    В production рекомендуется использовать более надёжный метод.
+    Логин: admin, Пароль: admin123
     """
     
     async def login(self, request: Request) -> bool:
@@ -27,11 +27,14 @@ class AdminAuth(AuthenticationBackend):
         username = form.get("username")
         password = form.get("password")
         
-        # Простая проверка (замените на реальную в production)
-        # Логин: admin, Пароль: admin123
+        print(f"[ADMIN] Login attempt: username={username}")
+        
         if username == "admin" and password == "admin123":
-            request.session.update({"admin": True})
+            request.session.update({"token": "admin-authenticated"})
+            print("[ADMIN] Login successful!")
             return True
+        
+        print("[ADMIN] Login failed!")
         return False
     
     async def logout(self, request: Request) -> bool:
@@ -39,7 +42,8 @@ class AdminAuth(AuthenticationBackend):
         return True
     
     async def authenticate(self, request: Request) -> bool:
-        return request.session.get("admin", False)
+        token = request.session.get("token")
+        return token == "admin-authenticated"
 
 
 # ============= Представления моделей =============
@@ -66,9 +70,6 @@ class UserAdmin(ModelView, model=User):
     
     # Колонки для поиска
     column_searchable_list = [User.email, User.first_name, User.last_name]
-    
-    # Фильтры
-    column_filters = [User.role, User.is_active, User.is_verified]
     
     # Сортировка по умолчанию
     column_default_sort = [(User.created_at, True)]
@@ -109,7 +110,7 @@ class ProjectAdmin(ModelView, model=Project):
     ]
     
     column_searchable_list = [Project.title, Project.description]
-    column_filters = [Project.status]
+    # column_filters = [Project.status]  # enum не поддерживается
     column_default_sort = [(Project.created_at, True)]
     
     form_columns = [
@@ -144,7 +145,7 @@ class TaskAdmin(ModelView, model=Task):
     ]
     
     column_searchable_list = [Task.title]
-    column_filters = [Task.status, Task.complexity]
+    # column_filters = [Task.status, Task.complexity]  # enum не поддерживается
 
 
 class ApplicationAdmin(ModelView, model=Application):
@@ -163,7 +164,7 @@ class ApplicationAdmin(ModelView, model=Application):
         Application.created_at
     ]
     
-    column_filters = [Application.status]
+    # column_filters = [Application.status]  # enum не поддерживается
     column_default_sort = [(Application.created_at, True)]
 
 
@@ -183,7 +184,7 @@ class RatingAdmin(ModelView, model=Rating):
         Rating.created_at
     ]
     
-    column_filters = [Rating.score]
+    # column_filters = [Rating.score]  # временно отключено
 
 
 class ContractAdmin(ModelView, model=Contract):
@@ -203,7 +204,7 @@ class ContractAdmin(ModelView, model=Contract):
         Contract.created_at
     ]
     
-    column_filters = [Contract.status]
+    # column_filters = [Contract.status]  # enum не поддерживается
 
 
 # ============= Функция создания админки =============
@@ -212,14 +213,14 @@ def create_admin(app):
     """
     Создаёт и настраивает админ-панель
     """
-    authentication_backend = AdminAuth(secret_key="admin-secret-key-change-me")
+    # Временно отключена авторизация для отладки
+    # authentication_backend = AdminAuth(secret_key="admin-secret-key-change-me")
     
     admin = Admin(
         app,
         engine,
         title="WORK21 Admin",
-        logo_url="/static/logo.png",
-        authentication_backend=authentication_backend,
+        # authentication_backend=authentication_backend,  # Раскомментируйте для включения авторизации
     )
     
     # Регистрируем модели
