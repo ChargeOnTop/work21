@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     debug: bool = True
     
     # База данных
-    database_url: str = "sqlite+aiosqlite:///./work21.db"
+    database_url: str = "postgresql+asyncpg://work21:work21password@localhost:5433/work21"
     
     # JWT настройки
     secret_key: str = "your-secret-key-change-in-production"

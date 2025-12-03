@@ -116,8 +116,8 @@ work21/
 - **HTTP**: Axios / fetch
 
 ### Database
-- **Production**: PostgreSQL 15+
-- **Development**: SQLite (для быстрого старта)
+- **Основная БД**: PostgreSQL 16+
+- **Миграции**: Alembic
 
 ### Infrastructure
 - Docker + Docker Compose
@@ -130,18 +130,154 @@ work21/
 ### Prerequisites
 - Python 3.11+
 - Node.js 18+
-- PostgreSQL 15+ (опционально, SQLite по умолчанию)
+- PostgreSQL 16+ (обязательно)
+- Docker и Docker Compose (опционально, для запуска через контейнеры)
+
+---
+
+## 🗄️ Настройка PostgreSQL
+
+### Вариант 1: Локальная установка PostgreSQL
+
+#### Установка PostgreSQL
+
+**Windows:**
+1. Скачайте установщик с [официального сайта](https://www.postgresql.org/download/windows/)
+2. Установите PostgreSQL 16+
+3. Запомните пароль для пользователя `postgres`
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt update
+sudo apt install postgresql-16 postgresql-contrib
+```
+
+**macOS:**
+```bash
+brew install postgresql@16
+brew services start postgresql@16
+```
+
+#### Создание базы данных
+
+```bash
+# Подключитесь к PostgreSQL
+psql -U postgres
+
+# Создайте базу данных и пользователя
+CREATE DATABASE work21;
+CREATE USER work21 WITH PASSWORD 'work21password';
+GRANT ALL PRIVILEGES ON DATABASE work21 TO work21;
+ALTER USER work21 CREATEDB;
+\q
+```
+
+#### Настройка переменных окружения
+
+Создайте файл `backend/.env`:
+
+```env
+DATABASE_URL=postgresql+asyncpg://work21:work21password@localhost:5433/work21
+SECRET_KEY=your-secret-key-change-in-production
+DEBUG=True
+```
+
+### Вариант 2: Запуск через Docker Compose
+
+```bash
+# Перейдите в папку docker
+cd docker
+
+# Запустите PostgreSQL и приложение
+docker-compose up -d db
+
+# Проверьте статус
+docker-compose ps
+```
+
+PostgreSQL будет доступен на `localhost:5433` с учетными данными:
+- **Пользователь**: `work21`
+- **Пароль**: `work21password`
+- **База данных**: `work21`
+
+### Подключение к PostgreSQL
+
+#### Через psql (командная строка)
+
+```bash
+# Локальная установка (если используете Docker)
+psql -U work21 -d work21 -h localhost -p 5433
+
+# Docker (внутри контейнера порт остается 5432)
+docker exec -it work21-db psql -U work21 -d work21
+```
+
+#### Через клиент (pgAdmin, DBeaver, DataGrip)
+
+**Параметры подключения:**
+- **Host**: `localhost`
+- **Port**: `5433`
+- **Database**: `work21`
+- **Username**: `work21`
+- **Password**: `work21password`
+
+### Применение миграций
+
+После настройки PostgreSQL необходимо применить миграции:
+
+```bash
+cd backend
+
+# Создать начальную миграцию (если еще не создана)
+alembic revision --autogenerate -m "Initial migration"
+
+# Применить миграции
+alembic upgrade head
+
+# Проверить статус базы данных
+python db_status.py
+```
+
+### Проверка подключения
+
+```bash
+cd backend
+python db_status.py
+```
+
+Скрипт покажет:
+- Список таблиц и количество записей
+- Пользователей
+- Проекты
+- Заявки и рейтинги
+
+---
+
+## 🚀 Запуск приложения
 
 ### Backend
+
 ```bash
 cd backend
 python -m venv venv
 venv\Scripts\activate  # Windows
+# или
+source venv/bin/activate  # Linux/macOS
+
 pip install -r requirements.txt
+
+# Применить миграции (если еще не применены)
+alembic upgrade head
+
+# Запустить сервер
 uvicorn app.main:app --reload --port 8000
 ```
 
+API будет доступен на http://localhost:8000
+Документация API: http://localhost:8000/docs
+
 ### Frontend
+
 ```bash
 cd frontend
 npm install
@@ -149,6 +285,18 @@ npm run dev
 ```
 
 Откройте http://localhost:3000
+
+### Запуск через Docker Compose (все сервисы)
+
+```bash
+cd docker
+docker-compose up -d
+```
+
+Сервисы будут доступны:
+- **Frontend**: http://localhost:3000
+- **Backend**: http://localhost:8000
+- **PostgreSQL**: localhost:5433
 
 ---
 

@@ -15,8 +15,17 @@ async_engine = create_async_engine(
 )
 
 # Синхронный движок (для SQLAdmin)
-# Преобразуем sqlite+aiosqlite -> sqlite
-sync_database_url = settings.database_url.replace("+aiosqlite", "").replace("+asyncpg", "")
+# Преобразуем async URL в sync URL
+if "+asyncpg" in settings.database_url:
+    # PostgreSQL: postgresql+asyncpg -> postgresql+psycopg2
+    sync_database_url = settings.database_url.replace("+asyncpg", "+psycopg2")
+elif "+aiosqlite" in settings.database_url:
+    # SQLite: sqlite+aiosqlite -> sqlite
+    sync_database_url = settings.database_url.replace("+aiosqlite", "")
+else:
+    # Если уже синхронный URL, используем как есть
+    sync_database_url = settings.database_url
+
 engine = create_engine(
     sync_database_url,
     echo=settings.debug,

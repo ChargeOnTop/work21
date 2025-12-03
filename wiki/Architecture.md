@@ -53,7 +53,7 @@
 | Среда | Технология |
 |-------|------------|
 | Development | SQLite |
-| Production | PostgreSQL 15+ |
+| Production | PostgreSQL 16+ |
 
 ## 📊 Модель данных
 

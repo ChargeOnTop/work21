@@ -301,7 +301,7 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ```env
 DEBUG=False
-DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/work21
+DATABASE_URL=postgresql+asyncpg://user:pass@host:5433/work21
 SECRET_KEY=<generate-secure-key>
 CORS_ORIGINS=["https://work21.ru"]
 ```

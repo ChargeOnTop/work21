@@ -3,14 +3,14 @@ version: '3.8'
 services:
   # PostgreSQL Database
   db:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: work21-db
     environment:
-      POSTGRES_USER: work21
-      POSTGRES_PASSWORD: work21password
-      POSTGRES_DB: work21
+      POSTGRES_USER: ${POSTGRES_USER:-work21}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-work21password}
+      POSTGRES_DB: ${POSTGRES_DB:-work21}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -26,10 +26,10 @@ services:
       dockerfile: ../docker/Dockerfile.backend
     container_name: work21-backend
     environment:
-      - DATABASE_URL=postgresql+asyncpg://work21:work21password@db:5432/work21
-      - SECRET_KEY=your-production-secret-key
-      - DEBUG=False
-      - CORS_ORIGINS=["http://localhost:3000"]
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-work21}:${POSTGRES_PASSWORD:-work21password}@db:5432/${POSTGRES_DB:-work21}
+      - SECRET_KEY=${SECRET_KEY:-your-production-secret-key}
+      - DEBUG=${DEBUG:-False}
+      - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000"]}
     ports:
       - "8000:8000"
     depends_on:
