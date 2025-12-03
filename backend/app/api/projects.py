@@ -63,7 +63,14 @@ async def create_project(
     
     db.add(project)
     await db.commit()
-    await db.refresh(project)
+    
+    # Загружаем проект с tasks для корректного ответа
+    result = await db.execute(
+        select(Project)
+        .options(selectinload(Project.tasks))
+        .where(Project.id == project.id)
+    )
+    project = result.scalar_one()
     
     return project
 
@@ -181,7 +188,14 @@ async def update_project(
         setattr(project, field, value)
     
     await db.commit()
-    await db.refresh(project)
+    
+    # Загружаем проект с tasks для корректного ответа
+    result = await db.execute(
+        select(Project)
+        .options(selectinload(Project.tasks))
+        .where(Project.id == project_id)
+    )
+    project = result.scalar_one()
     
     return project
 
@@ -220,7 +234,14 @@ async def publish_project(
     
     project.status = ProjectStatus.OPEN
     await db.commit()
-    await db.refresh(project)
+    
+    # Загружаем проект с tasks для корректного ответа
+    result = await db.execute(
+        select(Project)
+        .options(selectinload(Project.tasks))
+        .where(Project.id == project_id)
+    )
+    project = result.scalar_one()
     
     return project
 

@@ -1,10 +1,11 @@
 """
 Pydantic схемы для проектов, задач и заявок
 """
+import json
 from datetime import datetime
 from typing import Optional, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.project import ProjectStatus, TaskStatus, ApplicationStatus
 
@@ -77,6 +78,28 @@ class ProjectResponse(ProjectBase):
     created_at: datetime
     updated_at: datetime
     tasks: List[TaskResponse] = []
+    
+    @model_validator(mode='before')
+    @classmethod
+    def parse_tech_stack(cls, data):
+        """Преобразует tech_stack из JSON строки в список"""
+        if isinstance(data, dict):
+            tech_stack = data.get('tech_stack')
+            if isinstance(tech_stack, str) and tech_stack:
+                try:
+                    data['tech_stack'] = json.loads(tech_stack)
+                except (json.JSONDecodeError, TypeError):
+                    data['tech_stack'] = None
+        elif hasattr(data, '__dict__'):
+            # Если это объект модели SQLAlchemy или другой объект
+            tech_stack = getattr(data, 'tech_stack', None)
+            if isinstance(tech_stack, str) and tech_stack:
+                try:
+                    # Временно изменяем атрибут для сериализации
+                    object.__setattr__(data, 'tech_stack', json.loads(tech_stack))
+                except (json.JSONDecodeError, TypeError):
+                    object.__setattr__(data, 'tech_stack', None)
+        return data
     
     class Config:
         from_attributes = True

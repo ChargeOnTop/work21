@@ -41,7 +41,7 @@ export interface Project {
   requirements?: string;
   budget: number;
   deadline?: string;
-  tech_stack?: string;
+  tech_stack?: string | string[]; // Может быть JSON строка или массив
   status: 'draft' | 'open' | 'in_progress' | 'review' | 'completed' | 'cancelled';
   customer_id: number;
   generated_spec?: string;
@@ -210,11 +210,20 @@ export const usersApi = {
 
 // ==================== PROJECTS API ====================
 
+export interface ProjectCreateData {
+  title: string;
+  description: string;
+  requirements?: string;
+  budget: number;
+  deadline?: string;
+  tech_stack?: string[];
+}
+
 export const projectsApi = {
   /**
    * Создать проект
    */
-  async create(data: Omit<Project, 'id' | 'status' | 'customer_id' | 'created_at' | 'updated_at' | 'tasks'>): Promise<Project> {
+  async create(data: ProjectCreateData): Promise<Project> {
     return fetchApi<Project>('/api/v1/projects/', {
       method: 'POST',
       body: JSON.stringify(data),

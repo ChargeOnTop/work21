@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { projectsApi, Project, ApiError } from '@/lib/api';
 import {
   FolderKanban,
   Users,
@@ -12,6 +14,7 @@ import {
   CheckCircle,
   AlertCircle,
   Plus,
+  Loader2,
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -30,6 +33,29 @@ export default function DashboardPage() {
 
 // Dashboard для студента
 function StudentDashboard({ user }: { user: any }) {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [myProjects, setMyProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const [openProjects, myProjectsData] = await Promise.all([
+          projectsApi.getList('open', 0, 5),
+          projectsApi.getMy(),
+        ]);
+        setProjects(openProjects);
+        setMyProjects(myProjectsData);
+      } catch (error) {
+        console.error('Ошибка загрузки проектов:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProjects();
+  }, []);
+
   const stats = [
     {
       label: 'Рейтинг',
@@ -47,14 +73,14 @@ function StudentDashboard({ user }: { user: any }) {
     },
     {
       label: 'Активные заявки',
-      value: 0,
+      value: myProjects.filter(p => p.status === 'in_progress' || p.status === 'open').length,
       icon: Clock,
       color: 'blue',
       change: 'Ожидают ответа',
     },
     {
       label: 'В работе',
-      value: 0,
+      value: myProjects.filter(p => p.status === 'in_progress').length,
       icon: FolderKanban,
       color: 'violet',
       change: 'Текущие проекты',
@@ -134,7 +160,7 @@ function StudentDashboard({ user }: { user: any }) {
         </div>
       </div>
 
-      {/* Recent Projects Placeholder */}
+      {/* Recent Projects */}
       <div className="glass-card rounded-2xl p-6 border border-work21-border">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-white">Рекомендованные проекты</h3>
@@ -146,14 +172,61 @@ function StudentDashboard({ user }: { user: any }) {
           </Link>
         </div>
         
-        {/* Empty State */}
-        <div className="text-center py-12">
-          <FolderKanban className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400 mb-2">Проекты пока не загружены</p>
-          <p className="text-sm text-gray-500">
-            Нажмите "Смотреть все" чтобы найти подходящие проекты
-          </p>
-        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 text-accent-green animate-spin" />
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="text-center py-12">
+            <FolderKanban className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400 mb-2">Проекты пока не загружены</p>
+            <p className="text-sm text-gray-500">
+              Нажмите "Смотреть все" чтобы найти подходящие проекты
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {projects.slice(0, 3).map((project) => (
+              <Link
+                key={project.id}
+                href={`/dashboard/projects`}
+                className="block p-4 rounded-xl bg-work21-dark/50 border border-work21-border hover:border-accent-green/30 transition-colors"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-semibold text-white">{project.title}</h4>
+                  <span className="px-2 py-1 rounded bg-accent-green/20 text-accent-green text-xs">
+                    Открыт
+                  </span>
+                </div>
+                <p className="text-sm text-gray-400 mb-3 line-clamp-2">
+                  {project.description}
+                </p>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-4 text-gray-400">
+                    {project.deadline && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span>{new Date(project.deadline).toLocaleDateString('ru-RU')}</span>
+                      </div>
+                    )}
+                    <div className="font-medium text-white">
+                      {project.budget.toLocaleString('ru-RU')} ₽
+                    </div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-gray-500" />
+                </div>
+              </Link>
+            ))}
+            {projects.length > 3 && (
+              <Link
+                href="/dashboard/projects"
+                className="block text-center py-3 text-accent-green hover:underline text-sm"
+              >
+                Показать все проекты ({projects.length})
+              </Link>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -161,31 +234,57 @@ function StudentDashboard({ user }: { user: any }) {
 
 // Dashboard для заказчика
 function CustomerDashboard({ user }: { user: any }) {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const data = await projectsApi.getMy();
+        setProjects(data);
+      } catch (error) {
+        console.error('Ошибка загрузки проектов:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProjects();
+  }, []);
+
+  // Подсчет статистики
+  const totalProjects = projects.length;
+  const activeProjects = projects.filter(p => p.status === 'in_progress' || p.status === 'open').length;
+  const completedProjects = projects.filter(p => p.status === 'completed').length;
+  
+  // Подсчет заявок (нужно будет добавить API для получения заявок)
+  const pendingApplications = 0;
+
   const stats = [
     {
       label: 'Всего проектов',
-      value: 0,
+      value: totalProjects,
       icon: FolderKanban,
       color: 'green',
       change: 'За всё время',
     },
     {
       label: 'Активных',
-      value: 0,
+      value: activeProjects,
       icon: Clock,
       color: 'blue',
       change: 'В работе',
     },
     {
       label: 'Заявок',
-      value: 0,
+      value: pendingApplications,
       icon: Users,
       color: 'violet',
       change: 'Ожидают ответа',
     },
     {
       label: 'Завершено',
-      value: 0,
+      value: completedProjects,
       icon: CheckCircle,
       color: 'amber',
       change: 'Успешно',
@@ -271,26 +370,91 @@ function CustomerDashboard({ user }: { user: any }) {
         </Link>
       </div>
 
-      {/* My Projects Placeholder */}
+      {/* My Projects */}
       <div className="glass-card rounded-2xl p-6 border border-work21-border">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-white">Мои проекты</h3>
-          <Link
-            href="/dashboard/projects/new"
-            className="btn-primary text-sm py-2 px-4"
-          >
-            Создать проект
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/projects"
+              className="text-sm text-accent-green hover:underline"
+            >
+              Смотреть все
+            </Link>
+            <Link
+              href="/dashboard/projects/new"
+              className="btn-primary text-sm py-2 px-4"
+            >
+              Создать проект
+            </Link>
+          </div>
         </div>
         
-        {/* Empty State */}
-        <div className="text-center py-12">
-          <FolderKanban className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400 mb-2">У вас пока нет проектов</p>
-          <p className="text-sm text-gray-500">
-            Создайте первый проект, чтобы начать работу
-          </p>
-        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 text-accent-green animate-spin" />
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="text-center py-12">
+            <FolderKanban className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400 mb-2">У вас пока нет проектов</p>
+            <p className="text-sm text-gray-500">
+              Создайте первый проект, чтобы начать работу
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {projects.slice(0, 3).map((project) => (
+              <Link
+                key={project.id}
+                href={`/dashboard/projects`}
+                className="block p-4 rounded-xl bg-work21-dark/50 border border-work21-border hover:border-accent-green/30 transition-colors"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-semibold text-white">{project.title}</h4>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    project.status === 'draft' ? 'bg-gray-500/20 text-gray-400' :
+                    project.status === 'open' ? 'bg-accent-green/20 text-accent-green' :
+                    project.status === 'in_progress' ? 'bg-accent-blue/20 text-accent-blue' :
+                    project.status === 'completed' ? 'bg-accent-amber/20 text-accent-amber' :
+                    'bg-gray-500/20 text-gray-400'
+                  }`}>
+                    {project.status === 'draft' ? 'Черновик' :
+                     project.status === 'open' ? 'Открыт' :
+                     project.status === 'in_progress' ? 'В работе' :
+                     project.status === 'completed' ? 'Завершен' :
+                     project.status}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-400 mb-3 line-clamp-2">
+                  {project.description}
+                </p>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-4 text-gray-400">
+                    {project.deadline && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span>{new Date(project.deadline).toLocaleDateString('ru-RU')}</span>
+                      </div>
+                    )}
+                    <div className="font-medium text-white">
+                      {project.budget.toLocaleString('ru-RU')} ₽
+                    </div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-gray-500" />
+                </div>
+              </Link>
+            ))}
+            {projects.length > 3 && (
+              <Link
+                href="/dashboard/projects"
+                className="block text-center py-3 text-accent-green hover:underline text-sm"
+              >
+                Показать все проекты ({projects.length})
+              </Link>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
