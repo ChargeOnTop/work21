@@ -52,15 +52,8 @@ async def create_rating(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Создать рейтинг/отзыв (только заказчик после завершения проекта)
+    Создать рейтинг/отзыв (заказчик -> студент или студент -> заказчик после завершения проекта)
     """
-    if current_user.role != UserRole.CUSTOMER:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Только заказчики могут оставлять отзывы"
-        )
-    
-    # Проверяем проект
     result = await db.execute(
         select(Project).where(Project.id == rating_data.project_id)
     )
@@ -72,19 +65,40 @@ async def create_rating(
             detail="Проект не найден"
         )
     
-    if project.customer_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Вы не являетесь заказчиком этого проекта"
-        )
-    
     if project.status != ProjectStatus.COMPLETED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Можно оставить отзыв только после завершения проекта"
         )
     
-    # Проверяем, нет ли уже отзыва
+    if current_user.role == UserRole.CUSTOMER:
+        if project.customer_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Вы не являетесь заказчиком этого проекта"
+            )
+        if not project.assignee_id or project.assignee_id != rating_data.reviewee_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Неверный исполнитель"
+            )
+    elif current_user.role == UserRole.STUDENT:
+        if project.assignee_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Вы не являетесь исполнителем этого проекта"
+            )
+        if project.customer_id != rating_data.reviewee_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Неверный заказчик"
+            )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Только заказчики и студенты могут оставлять отзывы"
+        )
+    
     existing = await db.execute(
         select(Rating)
         .where(Rating.project_id == rating_data.project_id)
@@ -96,7 +110,6 @@ async def create_rating(
             detail="Вы уже оставили отзыв на этот проект"
         )
     
-    # Создаём рейтинг
     rating = Rating(
         project_id=rating_data.project_id,
         reviewer_id=current_user.id,
@@ -110,22 +123,20 @@ async def create_rating(
     
     db.add(rating)
     
-    # Обновляем рейтинг студента
-    student_result = await db.execute(
+    reviewee_result = await db.execute(
         select(User).where(User.id == rating_data.reviewee_id)
     )
-    student = student_result.scalar_one_or_none()
+    reviewee = reviewee_result.scalar_one_or_none()
     
-    if student:
-        # Пересчитываем средний рейтинг
+    if reviewee:
         avg_result = await db.execute(
             select(func.avg(Rating.score))
-            .where(Rating.reviewee_id == student.id)
+            .where(Rating.reviewee_id == reviewee.id)
         )
         avg_score = avg_result.scalar() or 0
-        
-        student.rating_score = float(avg_score)
-        student.completed_projects += 1
+        reviewee.rating_score = float(avg_score)
+        if current_user.role == UserRole.CUSTOMER:
+            reviewee.completed_projects += 1
     
     await db.commit()
     await db.refresh(rating)

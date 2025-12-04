@@ -34,6 +34,15 @@ export interface RegisterData {
   role: 'student' | 'customer';
 }
 
+export interface ProjectAssignee {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  avatar_url?: string;
+  rating_score: number;
+}
+
 export interface Project {
   id: number;
   title: string;
@@ -44,10 +53,22 @@ export interface Project {
   tech_stack?: string | string[]; // Может быть JSON строка или массив
   status: 'draft' | 'open' | 'in_progress' | 'review' | 'completed' | 'cancelled';
   customer_id: number;
+  assignee_id?: number;
+  assignee?: ProjectAssignee;
   generated_spec?: string;
+  llm_estimation?: string;
   created_at: string;
   updated_at: string;
   tasks: Task[];
+}
+
+export interface TaskAssignee {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  avatar_url?: string;
+  rating_score: number;
 }
 
 export interface Task {
@@ -60,6 +81,7 @@ export interface Task {
   status: 'pending' | 'in_progress' | 'review' | 'completed';
   project_id: number;
   assignee_id?: number;
+  assignee?: TaskAssignee;
   order: number;
   created_at: string;
 }
@@ -217,6 +239,7 @@ export interface ProjectCreateData {
   budget: number;
   deadline?: string;
   tech_stack?: string[];
+  llm_estimation?: string;
 }
 
 export const projectsApi = {
@@ -309,6 +332,175 @@ export const projectsApi = {
       }
     );
   },
+
+  /**
+   * Назначить исполнителя задаче
+   */
+  async assignTaskAssignee(
+    projectId: number,
+    taskId: number,
+    assigneeId: number | null
+  ): Promise<Task> {
+    return fetchApi<Task>(
+      `/api/v1/projects/${projectId}/tasks/${taskId}/assign`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ assignee_id: assigneeId }),
+      }
+    );
+  },
+
+  /**
+   * Назначить исполнителя проекту
+   */
+  async assignProjectAssignee(
+    projectId: number,
+    assigneeId: number | null
+  ): Promise<Project> {
+    return fetchApi<Project>(
+      `/api/v1/projects/${projectId}/assign`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ assignee_id: assigneeId }),
+      }
+    );
+  },
+
+  /**
+   * Создать задачу в проекте
+   */
+  async createTask(
+    projectId: number,
+    taskData: {
+      title: string;
+      description: string;
+      complexity: number;
+      estimated_hours?: number;
+      deadline?: string;
+    }
+  ): Promise<Task> {
+    return fetchApi<Task>(
+      `/api/v1/projects/${projectId}/tasks`,
+      {
+        method: 'POST',
+        body: JSON.stringify(taskData),
+      }
+    );
+  },
+
+  /**
+   * Завершить проект
+   */
+  async complete(projectId: number): Promise<Project> {
+    return fetchApi<Project>(`/api/v1/projects/${projectId}/complete`, {
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Запросить проверку проекта
+   */
+  async requestReview(projectId: number): Promise<Project> {
+    return fetchApi<Project>(`/api/v1/projects/${projectId}/request-review`, {
+      method: 'POST',
+    });
+  },
+};
+
+export const applicationsApi = {
+  /**
+   * Получить мои заявки (для студентов)
+   */
+  async getMy(): Promise<Application[]> {
+    return fetchApi<Application[]>('/api/v1/projects/applications/my');
+  },
+};
+
+export interface Rating {
+  id: number;
+  project_id: number;
+  reviewer_id: number;
+  reviewee_id: number;
+  score: number;
+  comment?: string;
+  quality_score?: number;
+  communication_score?: number;
+  deadline_score?: number;
+  created_at: string;
+}
+
+export interface RatingCreate {
+  project_id: number;
+  reviewee_id: number;
+  score: number;
+  comment?: string;
+  quality_score?: number;
+  communication_score?: number;
+  deadline_score?: number;
+}
+
+export const ratingsApi = {
+  /**
+   * Создать рейтинг/отзыв
+   */
+  async create(data: RatingCreate): Promise<Rating> {
+    return fetchApi<Rating>('/api/v1/ratings/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Получить отзывы о пользователе
+   */
+  async getUserRatings(userId: number): Promise<Rating[]> {
+    return fetchApi<Rating[]>(`/api/v1/ratings/user/${userId}`);
+  },
+};
+
+// ==================== LLM ESTIMATOR API ====================
+
+const ESTIMATOR_API_URL = process.env.NEXT_PUBLIC_ESTIMATOR_API_URL || 'http://localhost:8080';
+
+export interface EstimationRequest {
+  prompt: string;
+  model?: string;
+  systemPrompt?: string;
+}
+
+export interface EstimationResponse {
+  model: string;
+  response: string;
+  success: boolean;
+  error?: string;
+}
+
+export const estimatorApi = {
+  /**
+   * Рассчитать время выполнения проекта
+   */
+  async estimate(prompt: string, model?: string): Promise<EstimationResponse> {
+    const response = await fetch(`${ESTIMATOR_API_URL}/api/v1/llm/ask`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt,
+        model: model || 'deepseek-r1',
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiError(
+        response.status,
+        errorData.error || errorData.detail || `Ошибка ${response.status}`
+      );
+    }
+
+    return response.json();
+  },
 };
 
 // Экспорт всего API
@@ -316,6 +508,7 @@ export const api = {
   auth: authApi,
   users: usersApi,
   projects: projectsApi,
+  estimator: estimatorApi,
 };
 
 export default api;

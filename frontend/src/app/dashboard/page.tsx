@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { projectsApi, Project, ApiError } from '@/lib/api';
+import { projectsApi, Project } from '@/lib/api';
 import {
   FolderKanban,
   Users,
@@ -42,10 +42,12 @@ function StudentDashboard({ user }: { user: any }) {
       try {
         const [openProjects, myProjectsData] = await Promise.all([
           projectsApi.getList('open', 0, 5),
-          projectsApi.getMy(),
+          projectsApi.getMy(), // Проекты где студент назначен исполнителем или подал заявку
         ]);
         setProjects(openProjects);
-        setMyProjects(myProjectsData);
+        // Фильтруем проекты где студент назначен исполнителем
+        const assignedProjects = myProjectsData.filter(p => p.assignee_id === user.id);
+        setMyProjects(assignedProjects);
       } catch (error) {
         console.error('Ошибка загрузки проектов:', error);
       } finally {
@@ -54,7 +56,7 @@ function StudentDashboard({ user }: { user: any }) {
     };
 
     loadProjects();
-  }, []);
+  }, [user.id]);
 
   const stats = [
     {
@@ -160,7 +162,70 @@ function StudentDashboard({ user }: { user: any }) {
         </div>
       </div>
 
-      {/* Recent Projects */}
+      {/* Мои проекты (где студент назначен исполнителем) */}
+      {myProjects.length > 0 && (
+        <div className="glass-card rounded-2xl p-6 border border-work21-border">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-white">Мои проекты</h3>
+            <Link
+              href="/dashboard/projects"
+              className="text-sm text-accent-green hover:underline"
+            >
+              Смотреть все
+            </Link>
+          </div>
+          
+          <div className="space-y-4">
+            {myProjects.slice(0, 3).map((project) => (
+              <Link
+                key={project.id}
+                href={`/dashboard/projects/${project.id}`}
+                className="block p-4 rounded-xl bg-work21-dark/50 border border-accent-green/30 hover:border-accent-green/50 transition-colors"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-semibold text-white">{project.title}</h4>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    project.status === 'in_progress' ? 'bg-accent-blue/20 text-accent-blue' :
+                    project.status === 'completed' ? 'bg-accent-green/20 text-accent-green' :
+                    'bg-gray-500/20 text-gray-400'
+                  }`}>
+                    {project.status === 'in_progress' ? 'В работе' :
+                     project.status === 'completed' ? 'Завершен' :
+                     project.status}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-400 mb-3 line-clamp-2">
+                  {project.description}
+                </p>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-4 text-gray-400">
+                    {project.deadline && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span>{new Date(project.deadline).toLocaleDateString('ru-RU')}</span>
+                      </div>
+                    )}
+                    <div className="font-medium text-white">
+                      {project.budget.toLocaleString('ru-RU')} ₽
+                    </div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-accent-green" />
+                </div>
+              </Link>
+            ))}
+            {myProjects.length > 3 && (
+              <Link
+                href="/dashboard/projects"
+                className="block text-center py-3 text-accent-green hover:underline text-sm"
+              >
+                Показать все мои проекты ({myProjects.length})
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Рекомендованные проекты */}
       <div className="glass-card rounded-2xl p-6 border border-work21-border">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-white">Рекомендованные проекты</h3>
@@ -237,11 +302,24 @@ function CustomerDashboard({ user }: { user: any }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [pendingApplications, setPendingApplications] = useState(0);
+
   useEffect(() => {
-    const loadProjects = async () => {
+    const loadData = async () => {
       try {
         const data = await projectsApi.getMy();
         setProjects(data);
+        
+        let total = 0;
+        for (const project of data) {
+          try {
+            const apps = await projectsApi.getApplications(project.id);
+            total += apps.filter(a => a.status === 'pending').length;
+          } catch {
+            // Игнорируем ошибки для отдельных проектов
+          }
+        }
+        setPendingApplications(total);
       } catch (error) {
         console.error('Ошибка загрузки проектов:', error);
       } finally {
@@ -249,16 +327,13 @@ function CustomerDashboard({ user }: { user: any }) {
       }
     };
 
-    loadProjects();
+    loadData();
   }, []);
 
   // Подсчет статистики
   const totalProjects = projects.length;
   const activeProjects = projects.filter(p => p.status === 'in_progress' || p.status === 'open').length;
   const completedProjects = projects.filter(p => p.status === 'completed').length;
-  
-  // Подсчет заявок (нужно будет добавить API для получения заявок)
-  const pendingApplications = 0;
 
   const stats = [
     {

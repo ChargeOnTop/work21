@@ -63,10 +63,17 @@ class Project(Base):
     
     # Связи
     customer_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    customer: Mapped["User"] = relationship("User", back_populates="projects")
+    customer: Mapped["User"] = relationship("User", back_populates="projects", foreign_keys=[customer_id])
+    
+    # Исполнитель проекта (студент)
+    assignee_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    assignee: Mapped[Optional["User"]] = relationship("User", foreign_keys=[assignee_id])
     
     # Сгенерированное ТЗ от AI
     generated_spec: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Оценка времени выполнения от LLM
+    llm_estimation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     # Метаданные
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -114,6 +121,7 @@ class Task(Base):
     project: Mapped["Project"] = relationship("Project", back_populates="tasks")
     
     assignee_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    assignee: Mapped[Optional["User"]] = relationship("User", foreign_keys=[assignee_id])
     
     # Метаданные
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

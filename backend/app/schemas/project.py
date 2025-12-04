@@ -20,12 +20,26 @@ class TaskCreate(BaseModel):
     order: int = 0
 
 
+class TaskAssigneeInfo(BaseModel):
+    """Информация об исполнителе задачи"""
+    id: int
+    first_name: str
+    last_name: str
+    email: str
+    avatar_url: Optional[str] = None
+    rating_score: float
+    
+    class Config:
+        from_attributes = True
+
+
 class TaskResponse(TaskCreate):
     """Схема ответа с данными задачи"""
     id: int
     status: TaskStatus
     project_id: int
     assignee_id: Optional[int] = None
+    assignee: Optional[TaskAssigneeInfo] = None
     created_at: datetime
     
     class Config:
@@ -40,6 +54,7 @@ class ProjectBase(BaseModel):
     budget: float = Field(..., gt=0)
     deadline: Optional[datetime] = None
     tech_stack: Optional[List[str]] = None
+    llm_estimation: Optional[str] = None
 
 
 class ProjectCreate(ProjectBase):
@@ -66,7 +81,21 @@ class ProjectUpdate(BaseModel):
     budget: Optional[float] = Field(None, gt=0)
     deadline: Optional[datetime] = None
     tech_stack: Optional[List[str]] = None
+    llm_estimation: Optional[str] = None
     status: Optional[ProjectStatus] = None
+
+
+class ProjectAssigneeInfo(BaseModel):
+    """Информация об исполнителе проекта"""
+    id: int
+    first_name: str
+    last_name: str
+    email: str
+    avatar_url: Optional[str] = None
+    rating_score: float
+    
+    class Config:
+        from_attributes = True
 
 
 class ProjectResponse(ProjectBase):
@@ -74,7 +103,10 @@ class ProjectResponse(ProjectBase):
     id: int
     status: ProjectStatus
     customer_id: int
+    assignee_id: Optional[int] = None
+    assignee: Optional[ProjectAssigneeInfo] = None
     generated_spec: Optional[str] = None
+    llm_estimation: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     tasks: List[TaskResponse] = []

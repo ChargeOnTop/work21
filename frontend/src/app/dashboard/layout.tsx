@@ -154,10 +154,13 @@ export default function DashboardLayout({
           </div>
           <div className="flex items-center gap-4">
             {/* Notifications */}
-            <button className="relative p-2 rounded-lg text-gray-400 hover:text-white hover:bg-work21-border transition-colors">
+            <Link
+              href="/dashboard/settings"
+              className="relative p-2 rounded-lg text-gray-400 hover:text-white hover:bg-work21-border transition-colors"
+            >
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-accent-green rounded-full"></span>
-            </button>
+            </Link>
             
             {/* Rating (for students) */}
             {user.role === 'student' && (

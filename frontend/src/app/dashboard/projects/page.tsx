@@ -50,8 +50,19 @@ export default function ProjectsPage() {
           // Для заказчика - его проекты
           data = await projectsApi.getMy();
         } else {
-          // Для студента - открытые проекты
-          data = await projectsApi.getList('open');
+          // Для студента - открытые проекты И проекты где он назначен исполнителем
+          const [openProjects, myProjects] = await Promise.all([
+            projectsApi.getList('open'),
+            projectsApi.getMy(), // Это вернет проекты где студент назначен исполнителем
+          ]);
+          // Объединяем и убираем дубликаты
+          const allProjects = [...openProjects];
+          myProjects.forEach(p => {
+            if (!allProjects.find(ap => ap.id === p.id)) {
+              allProjects.push(p);
+            }
+          });
+          data = allProjects;
         }
         
         setProjects(data);
@@ -334,13 +345,36 @@ export default function ProjectsPage() {
                         </Link>
                       </>
                     )}
-                    {user.role === 'student' && (
+                    {user.role === 'student' && project.assignee_id === user.id && (
+                      <>
+                        <div className="px-3 py-1.5 rounded-lg bg-accent-green/10 border border-accent-green/30 text-accent-green text-sm font-medium">
+                          Вы исполнитель
+                        </div>
+                        <Link
+                          href={`/dashboard/projects/${project.id}`}
+                          className="px-4 py-2 rounded-lg bg-accent-blue/10 border border-accent-blue/30 text-accent-blue hover:bg-accent-blue/20 transition-colors text-sm flex items-center gap-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Подробнее
+                        </Link>
+                      </>
+                    )}
+                    {user.role === 'student' && project.status === 'open' && !project.assignee_id && (
                       <Link
                         href={`/dashboard/projects/${project.id}`}
                         className="btn-primary text-sm flex items-center gap-2"
                       >
                         <Users className="w-4 h-4" />
                         Подать заявку
+                      </Link>
+                    )}
+                    {user.role === 'student' && project.status !== 'open' && project.assignee_id !== user.id && (
+                      <Link
+                        href={`/dashboard/projects/${project.id}`}
+                        className="px-4 py-2 rounded-lg bg-accent-blue/10 border border-accent-blue/30 text-accent-blue hover:bg-accent-blue/20 transition-colors text-sm flex items-center gap-2"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Подробнее
                       </Link>
                     )}
                   </div>

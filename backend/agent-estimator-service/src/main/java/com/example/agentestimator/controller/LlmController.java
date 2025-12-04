@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/llm")
 @RequiredArgsConstructor
 @Tag(name = "LLM API", description = "API для взаимодействия с локальной LLM (Ollama)")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:8000"}, maxAge = 3600)
 public class LlmController {
 
     private final LlmService llmService;

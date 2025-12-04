@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, Clock, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { projectsApi, ApiError } from '@/lib/api';
+import { projectsApi, estimatorApi, ApiError } from '@/lib/api';
 
 interface ProjectFormData {
   title: string;
@@ -14,6 +14,7 @@ interface ProjectFormData {
   budget: string;
   deadline: string;
   tech_stack: string[];
+  llm_estimation?: string;
 }
 
 export default function NewProjectPage() {
@@ -31,6 +32,9 @@ export default function NewProjectPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [isEstimating, setIsEstimating] = useState(false);
+  const [estimationResult, setEstimationResult] = useState<string | null>(null);
+  const [estimationError, setEstimationError] = useState('');
 
   // Проверяем, что пользователь - заказчик
   useEffect(() => {
@@ -72,6 +76,38 @@ export default function NewProjectPage() {
     }
   };
 
+  const handleEstimate = async () => {
+    if (!formData.description.trim()) {
+      setEstimationError('Сначала заполните описание проекта');
+      return;
+    }
+
+    setIsEstimating(true);
+    setEstimationError('');
+    setEstimationResult(null);
+
+    try {
+      const response = await estimatorApi.estimate(formData.description);
+      
+      if (response.success && response.response) {
+        setEstimationResult(response.response);
+        // Сохраняем оценку в форму для отправки на сервер
+        setFormData({ ...formData, llm_estimation: response.response });
+      } else {
+        setEstimationError(response.error || 'Не удалось получить оценку');
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setEstimationError(err.message);
+      } else {
+        setEstimationError('Ошибка при расчете времени выполнения');
+      }
+      console.error('Ошибка расчета времени:', err);
+    } finally {
+      setIsEstimating(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -104,6 +140,7 @@ export default function NewProjectPage() {
         budget: budget,
         deadline: formData.deadline || undefined,
         tech_stack: formData.tech_stack.length > 0 ? formData.tech_stack : undefined,
+        llm_estimation: formData.llm_estimation || undefined,
       };
 
       const project = await projectsApi.create(projectData);
@@ -242,6 +279,40 @@ export default function NewProjectPage() {
             </p>
           </div>
 
+          {/* Estimate Button - Prominent */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-accent-violet" />
+              Оценка времени выполнения
+            </label>
+            <button
+              type="button"
+              onClick={handleEstimate}
+              disabled={isEstimating || !formData.description.trim()}
+              className="w-full px-6 py-4 rounded-lg bg-gradient-to-r from-accent-violet to-accent-blue border-2 border-accent-violet/50 text-white hover:from-accent-violet/90 hover:to-accent-blue/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 font-semibold shadow-lg shadow-accent-violet/20 hover:shadow-accent-violet/40"
+            >
+              {isEstimating ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Расчет времени выполнения...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  <span>Рассчитать оценку времени выполнения</span>
+                </>
+              )}
+            </button>
+            
+            {/* Estimation Error */}
+            {estimationError && (
+              <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/30 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-red-400">{estimationError}</div>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Budget */}
             <div>
@@ -275,6 +346,19 @@ export default function NewProjectPage() {
               />
             </div>
           </div>
+
+          {/* LLM Estimation - Full Width Field */}
+          {estimationResult && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-accent-violet" />
+                Оценка времени выполнения от LLM
+              </label>
+              <div className="px-4 py-4 rounded-lg bg-accent-violet/10 border border-accent-violet/30 text-gray-300 whitespace-pre-wrap text-sm max-h-96 overflow-y-auto">
+                {estimationResult}
+              </div>
+            </div>
+          )}
 
           {/* Tech Stack */}
           <div>

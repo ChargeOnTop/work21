@@ -13,11 +13,13 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Этап 2: Финальный образ
+# Используем более стабильный тег или альтернативный образ при проблемах с сетью
 FROM eclipse-temurin:17-jre-alpine
+# Альтернатива, если выше не работает: FROM amazoncorretto:17-alpine
 WORKDIR /app
 
 # Устанавливаем netcat для healthcheck
-RUN apk add --no-cache netcat-openbsd
+RUN apk add --no-cache netcat-openbsd curl
 
 # Создаем непривилегированного пользователя
 RUN addgroup -S spring && adduser -S spring -G spring
