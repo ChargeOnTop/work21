@@ -14,8 +14,26 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ru">
-      <body className="min-h-screen bg-work21-dark text-white antialiased">
+    <html lang="ru" className="dark" suppressHydrationWarning>
+      <head>
+        {/* Скрипт для предотвращения мерцания при загрузке */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('theme');
+                  if (theme === 'light' || (!theme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.add('light');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-screen antialiased transition-colors duration-300" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
         <Providers>
           {children}
         </Providers>

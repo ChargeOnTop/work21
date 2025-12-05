@@ -5,5 +5,6 @@ export { default as AIAgents } from './AIAgents'
 export { default as HowItWorks } from './HowItWorks'
 export { default as CTA } from './CTA'
 export { default as Footer } from './Footer'
+export { default as ThemeToggle } from './ThemeToggle'
 
 

@@ -5,25 +5,35 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        // Основная палитра WORK21
+        // Основная палитра WORK21 (тёмная тема по умолчанию)
         'work21': {
-          'dark': '#0a0a0f',
-          'darker': '#06060a',
-          'card': '#12121a',
-          'border': '#1e1e2a',
-          'muted': '#6b7280',
+          'dark': 'var(--color-bg)',
+          'darker': 'var(--color-bg-secondary)',
+          'card': 'var(--color-card)',
+          'border': 'var(--color-border)',
+          'muted': 'var(--color-text-muted)',
         },
         'accent': {
-          'green': '#10b981',
+          'green': 'var(--color-accent-green)',
           'green-dark': '#059669',
-          'blue': '#3b82f6',
+          'blue': 'var(--color-accent-blue)',
           'blue-dark': '#2563eb',
-          'violet': '#8b5cf6',
+          'violet': 'var(--color-accent-violet)',
           'violet-dark': '#7c3aed',
           'amber': '#f59e0b',
+        },
+        // Адаптивные цвета
+        'themed': {
+          'bg': 'var(--color-bg)',
+          'card': 'var(--color-card)',
+          'border': 'var(--color-border)',
+          'text': 'var(--color-text)',
+          'text-secondary': 'var(--color-text-secondary)',
+          'text-muted': 'var(--color-text-muted)',
         }
       },
       fontFamily: {

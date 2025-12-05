@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { ThemeToggle } from '@/components';
 import {
   Zap,
   LayoutDashboard,
@@ -55,10 +56,10 @@ export default function DashboardLayout({
   // Показываем загрузку
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-work21-dark">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-bg)' }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent-green mx-auto mb-4"></div>
-          <p className="text-gray-400">Загрузка...</p>
+          <p style={{ color: 'var(--color-text-secondary)' }}>Загрузка...</p>
         </div>
       </div>
     );
@@ -72,16 +73,16 @@ export default function DashboardLayout({
   const navigation = user.role === 'customer' ? customerNavigation : studentNavigation;
 
   return (
-    <div className="min-h-screen bg-work21-dark flex">
+    <div className="min-h-screen flex transition-colors duration-300" style={{ background: 'var(--color-bg)' }}>
       {/* Sidebar */}
-      <aside className="w-64 bg-work21-card border-r border-work21-border flex flex-col">
+      <aside className="w-64 flex flex-col transition-colors duration-300" style={{ background: 'var(--color-card)', borderRight: '1px solid var(--color-border)' }}>
         {/* Logo */}
-        <div className="p-6 border-b border-work21-border">
+        <div className="p-6" style={{ borderBottom: '1px solid var(--color-border)' }}>
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-green to-accent-blue flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold">
+            <span className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>
               WORK<span className="text-accent-green">21</span>
             </span>
           </Link>
@@ -96,7 +97,16 @@ export default function DashboardLayout({
                 <li key={item.name}>
                   <Link
                     href={item.href}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-work21-border transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-opacity-50"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'var(--color-border)';
+                      e.currentTarget.style.color = 'var(--color-text)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = 'var(--color-text-secondary)';
+                    }}
                   >
                     <Icon className="w-5 h-5" />
                     <span>{item.name}</span>
@@ -108,13 +118,14 @@ export default function DashboardLayout({
         </nav>
 
         {/* User Info & Logout */}
-        <div className="p-4 border-t border-work21-border">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-work21-dark/50 mb-3">
+        <div className="p-4" style={{ borderTop: '1px solid var(--color-border)' }}>
+          <div className="flex items-center gap-3 px-4 py-3 rounded-lg mb-3" style={{ background: 'var(--color-bg)' }}>
             {user.avatar_url ? (
               <img
                 src={user.avatar_url}
                 alt={`${user.first_name} ${user.last_name}`}
-                className="w-10 h-10 rounded-full object-cover border border-work21-border"
+                className="w-10 h-10 rounded-full object-cover"
+                style={{ border: '1px solid var(--color-border)' }}
               />
             ) : (
               <div className="w-10 h-10 rounded-full bg-accent-green/20 flex items-center justify-center">
@@ -125,17 +136,18 @@ export default function DashboardLayout({
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <div className="font-medium text-white truncate">
+              <div className="font-medium truncate" style={{ color: 'var(--color-text)' }}>
                 {user.first_name} {user.last_name}
               </div>
-              <div className="text-xs text-gray-400 capitalize">
+              <div className="text-xs capitalize" style={{ color: 'var(--color-text-secondary)' }}>
                 {user.role === 'student' ? 'Студент' : 'Заказчик'}
               </div>
             </div>
           </div>
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:text-red-400 hover:bg-red-500/10"
+            style={{ color: 'var(--color-text-secondary)' }}
           >
             <LogOut className="w-5 h-5" />
             <span>Выйти</span>
@@ -146,17 +158,21 @@ export default function DashboardLayout({
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <header className="h-16 bg-work21-card border-b border-work21-border flex items-center justify-between px-6">
+        <header className="h-16 flex items-center justify-between px-6 transition-colors duration-300" style={{ background: 'var(--color-card)', borderBottom: '1px solid var(--color-border)' }}>
           <div>
-            <h1 className="text-lg font-semibold text-white">
+            <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
               Добро пожаловать, {user.first_name}!
             </h1>
           </div>
           <div className="flex items-center gap-4">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+            
             {/* Notifications */}
             <Link
               href="/dashboard/settings"
-              className="relative p-2 rounded-lg text-gray-400 hover:text-white hover:bg-work21-border transition-colors"
+              className="relative p-2 rounded-lg transition-colors"
+              style={{ color: 'var(--color-text-secondary)' }}
             >
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-accent-green rounded-full"></span>
@@ -169,7 +185,7 @@ export default function DashboardLayout({
                 <span className="font-medium">{user.rating_score.toFixed(1)}</span>
               </div>
             )}
-            <div className="w-10 h-10 rounded-full overflow-hidden border border-work21-border bg-work21-dark flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
               {user.avatar_url ? (
                 <img
                   src={user.avatar_url}
@@ -177,7 +193,7 @@ export default function DashboardLayout({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-sm font-semibold text-white">
+                <span className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
                   {user.first_name[0]}
                   {user.last_name[0]}
                 </span>

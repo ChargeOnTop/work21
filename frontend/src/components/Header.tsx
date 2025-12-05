@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Menu, X, Zap, User } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
+import ThemeToggle from './ThemeToggle'
 
 const navigation = [
   { name: 'Главная', href: '/' },
@@ -17,7 +18,12 @@ export default function Header() {
   const { user, isAuthenticated, isLoading } = useAuth()
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-work21-dark/80 backdrop-blur-xl border-b border-work21-border">
+    <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b transition-colors duration-300"
+      style={{
+        background: 'var(--glass-bg)',
+        borderColor: 'var(--color-border)',
+      }}
+    >
       <nav className="container-lg mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
@@ -46,23 +52,29 @@ export default function Header() {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-4">
+            <ThemeToggle />
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-gray-600 border-t-white rounded-full animate-spin" />
             ) : isAuthenticated && user ? (
               <Link 
                 href="/dashboard" 
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-work21-card border border-work21-border hover:border-accent-green/50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
+                style={{
+                  background: 'var(--color-card)',
+                  borderWidth: '1px',
+                  borderColor: 'var(--color-border)',
+                }}
               >
                 <div className="w-8 h-8 rounded-full bg-accent-green/20 flex items-center justify-center">
                   <span className="text-accent-green text-sm font-semibold">
                     {user.first_name[0]}{user.last_name[0]}
                   </span>
                 </div>
-                <span className="text-sm text-white">{user.first_name}</span>
+                <span className="text-sm" style={{ color: 'var(--color-text)' }}>{user.first_name}</span>
               </Link>
             ) : (
               <>
-                <Link href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">
+                <Link href="/login" className="text-sm transition-colors" style={{ color: 'var(--color-text-secondary)' }}>
                   Войти
                 </Link>
                 <Link href="/register" className="btn-primary text-sm">
@@ -88,19 +100,21 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-work21-border animate-fade-in">
+          <div className="md:hidden py-4 border-t animate-fade-in" style={{ borderColor: 'var(--color-border)' }}>
             <div className="flex flex-col gap-4">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="text-gray-400 hover:text-white transition-colors py-2"
+                  className="transition-colors py-2"
+                  style={{ color: 'var(--color-text-secondary)' }}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.name}
                 </Link>
               ))}
-              <div className="flex gap-4 pt-4 border-t border-work21-border">
+              <div className="flex items-center gap-4 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
+                <ThemeToggle />
                 {isAuthenticated && user ? (
                   <Link 
                     href="/dashboard" 
