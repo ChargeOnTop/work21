@@ -4,9 +4,11 @@ import com.example.agentestimator.client.OllamaClient;
 import com.example.agentestimator.dto.ChatMessage;
 import com.example.agentestimator.dto.ChatRequest;
 import com.example.agentestimator.dto.ChatResponse;
+import com.example.agentestimator.dto.EstimationResponse;
 import com.example.agentestimator.dto.SimpleChatRequest;
 import com.example.agentestimator.dto.SimpleChatResponse;
 import com.example.agentestimator.service.LlmService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +17,8 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +26,10 @@ import java.util.List;
 public class LlmServiceImpl implements LlmService {
 
     private final OllamaClient ollamaClient;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    
+    // Паттерн для извлечения JSON из ответа (на случай, если есть дополнительный текст)
+    private static final Pattern JSON_PATTERN = Pattern.compile("\\{.*\"price\".*\"data\".*\\}", Pattern.DOTALL);
 
     @Value("${ollama.default-model:deepseek-r1}")
     private String defaultModel;
@@ -69,6 +77,23 @@ public class LlmServiceImpl implements LlmService {
         log.info("Получен ответ от модели: {}, статус: {}",
                 response.getModel(), response.getDone());
 
+        // Пытаемся распарсить JSON ответ для получения структурированной оценки
+        if (response.getMessage() != null && response.getMessage().getContent() != null) {
+            String responseContent = response.getMessage().getContent();
+            EstimationResponse estimation = parseEstimationResponse(responseContent);
+            
+            if (estimation != null) {
+                // Добавляем price на верхний уровень для удобного доступа
+                response.setPrice(estimation.getPrice());
+                response.setEstimation(estimation);
+                log.info("Успешно распарсен JSON ответ: price={}, data length={}", 
+                        estimation.getPrice(), 
+                        estimation.getData() != null ? estimation.getData().length() : 0);
+            } else {
+                log.debug("Не удалось распарсить JSON из ответа модели");
+            }
+        }
+
         return response;
     }
 
@@ -107,12 +132,27 @@ public class LlmServiceImpl implements LlmService {
 
             log.info("Получен развернутый ответ от модели, длина: {} символов", responseContent.length());
 
-            // Возвращаем полный развернутый ответ от модели
-            return SimpleChatResponse.builder()
+            // Пытаемся распарсить JSON ответ для получения структурированной оценки
+            EstimationResponse estimation = parseEstimationResponse(responseContent);
+            
+            // Возвращаем ответ с парсингом JSON, если удалось
+            SimpleChatResponse.SimpleChatResponseBuilder responseBuilder = SimpleChatResponse.builder()
                     .model(model)
                     .response(responseContent)
-                    .success(true)
-                    .build();
+                    .success(true);
+            
+            if (estimation != null) {
+                responseBuilder.estimation(estimation);
+                // Добавляем price на верхний уровень для удобного доступа
+                responseBuilder.price(estimation.getPrice());
+                log.info("Успешно распарсен JSON ответ: price={}, data length={}", 
+                        estimation.getPrice(), 
+                        estimation.getData() != null ? estimation.getData().length() : 0);
+            } else {
+                log.warn("Не удалось распарсить JSON из ответа модели");
+            }
+            
+            return responseBuilder.build();
 
         } catch (Exception e) {
             log.error("Ошибка при обработке запроса: {}", e.getMessage(), e);
@@ -293,6 +333,45 @@ public class LlmServiceImpl implements LlmService {
     private String truncateForLog(String text) {
         if (text == null) return null;
         return text.length() > 100 ? text.substring(0, 100) + "..." : text;
+    }
+
+    /**
+     * Парсит JSON ответ от LLM и извлекает структурированную оценку
+     */
+    private EstimationResponse parseEstimationResponse(String responseContent) {
+        if (responseContent == null || responseContent.trim().isEmpty()) {
+            return null;
+        }
+
+        try {
+            // Сначала пытаемся найти JSON в ответе (на случай, если есть дополнительный текст)
+            String jsonContent = responseContent.trim();
+            
+            // Если ответ не начинается с '{', пытаемся найти JSON внутри текста
+            if (!jsonContent.startsWith("{")) {
+                Matcher matcher = JSON_PATTERN.matcher(jsonContent);
+                if (matcher.find()) {
+                    jsonContent = matcher.group(0);
+                } else {
+                    log.debug("JSON не найден в ответе, пытаемся парсить весь ответ");
+                }
+            }
+
+            // Пытаемся распарсить JSON
+            EstimationResponse estimation = objectMapper.readValue(jsonContent, EstimationResponse.class);
+            
+            // Валидация: проверяем, что price и data присутствуют
+            if (estimation.getPrice() != null && estimation.getData() != null) {
+                return estimation;
+            } else {
+                log.warn("JSON распарсен, но отсутствуют обязательные поля: price={}, data={}", 
+                        estimation.getPrice(), estimation.getData());
+                return null;
+            }
+        } catch (Exception e) {
+            log.debug("Не удалось распарсить JSON ответ: {}", e.getMessage());
+            return null;
+        }
     }
 }
 

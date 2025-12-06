@@ -1,5 +1,6 @@
 package com.example.agentestimator.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(description = "Ответ от LLM модели")
 public class ChatResponse {
 
@@ -50,5 +52,11 @@ public class ChatResponse {
     @Schema(description = "Время генерации ответа (наносекунды)")
     @JsonProperty("eval_duration")
     private Long evalDuration;
+
+    @Schema(description = "Ориентировочная стоимость проекта в рублях (если ответ содержит оценку)", example = "100000")
+    private Integer price;
+
+    @Schema(description = "Структурированная оценка проекта (если ответ содержит JSON с оценкой)")
+    private EstimationResponse estimation;
 }
 

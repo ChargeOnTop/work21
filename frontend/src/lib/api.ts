@@ -468,11 +468,33 @@ export interface EstimationRequest {
   systemPrompt?: string;
 }
 
+export interface EstimationData {
+  price: number;
+  data: string;
+}
+
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatRequest {
+  model: string;
+  messages: ChatMessage[];
+  stream?: boolean;
+}
+
 export interface EstimationResponse {
   model: string;
-  response: string;
-  success: boolean;
+  message?: {
+    content: string;
+  };
+  response?: string; // для обратной совместимости
+  success?: boolean; // для обратной совместимости
   error?: string;
+  price?: number;
+  estimation?: EstimationData;
+  done?: boolean;
 }
 
 export const estimatorApi = {
@@ -480,15 +502,26 @@ export const estimatorApi = {
    * Рассчитать время выполнения проекта
    */
   async estimate(prompt: string, model?: string): Promise<EstimationResponse> {
-    const response = await fetch(`${ESTIMATOR_API_URL}/api/v1/llm/ask`, {
+    const chatModel = model || 'deepseek-r1';
+    
+    // Формируем запрос в формате ChatRequest
+    const chatRequest: ChatRequest = {
+      model: chatModel,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      stream: false,
+    };
+
+    const response = await fetch(`${ESTIMATOR_API_URL}/api/v1/llm/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        prompt,
-        model: model || 'deepseek-r1',
-      }),
+      body: JSON.stringify(chatRequest),
     });
 
     if (!response.ok) {
@@ -499,7 +532,18 @@ export const estimatorApi = {
       );
     }
 
-    return response.json();
+    const chatResponse = await response.json();
+    
+    // Преобразуем ChatResponse в формат EstimationResponse для обратной совместимости
+    return {
+      model: chatResponse.model || chatModel,
+      message: chatResponse.message,
+      response: chatResponse.message?.content || '', // для обратной совместимости
+      success: chatResponse.done !== false, // для обратной совместимости
+      price: chatResponse.price,
+      estimation: chatResponse.estimation,
+      done: chatResponse.done,
+    };
   },
 };
 

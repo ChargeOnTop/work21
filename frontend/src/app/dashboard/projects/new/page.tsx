@@ -89,10 +89,37 @@ export default function NewProjectPage() {
     try {
       const response = await estimatorApi.estimate(formData.description);
       
-      if (response.success && response.response) {
-        setEstimationResult(response.response);
-        // Сохраняем оценку в форму для отправки на сервер
-        setFormData({ ...formData, llm_estimation: response.response });
+      // Получаем содержимое ответа (из message.content или response для обратной совместимости)
+      const responseContent = response.message?.content || response.response || '';
+      
+      if (response.success !== false && responseContent) {
+        // Если есть структурированная оценка, используем её
+        if (response.estimation) {
+          setEstimationResult(response.estimation.data);
+          // Автоподстановка стоимости в поле budget (используем price из верхнего уровня или из estimation)
+          const price = response.price || response.estimation.price;
+          if (price) {
+            setFormData({ 
+              ...formData, 
+              llm_estimation: response.estimation.data,
+              budget: price.toString()
+            });
+          } else {
+            setFormData({ ...formData, llm_estimation: response.estimation.data });
+          }
+        } else if (response.price) {
+          // Если есть price, но нет estimation (fallback)
+          setEstimationResult(responseContent);
+          setFormData({ 
+            ...formData, 
+            llm_estimation: responseContent,
+            budget: response.price.toString()
+          });
+        } else {
+          // Fallback на старый формат (если JSON не распарсился)
+          setEstimationResult(responseContent);
+          setFormData({ ...formData, llm_estimation: responseContent });
+        }
       } else {
         setEstimationError(response.error || 'Не удалось получить оценку');
       }
@@ -318,6 +345,11 @@ export default function NewProjectPage() {
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Бюджет (₽) <span className="text-red-400">*</span>
+                {formData.budget && (
+                  <span className="ml-2 text-xs text-accent-green">
+                    (автоматически рассчитано)
+                  </span>
+                )}
               </label>
               <input
                 type="number"
