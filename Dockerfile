@@ -18,7 +18,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Копируем код приложения
 COPY . .
 
-# Копируем и делаем исполняемым entrypoint скрипт
+# Копируем entrypoint скрипт в фиксированное место и делаем исполняемым
+# (чтобы он работал даже при монтировании volumes)
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
@@ -28,5 +29,4 @@ EXPOSE 8000
 # Используем entrypoint для автоматического применения миграций
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
 
