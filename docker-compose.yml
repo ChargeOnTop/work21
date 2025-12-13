@@ -27,7 +27,7 @@ services:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-work21}:${POSTGRES_PASSWORD:-work21password}@db:5432/${POSTGRES_DB:-work21}
       - SECRET_KEY=${SECRET_KEY:-your-production-secret-key}
       - DEBUG=${DEBUG:-False}
-      - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000"]}
+      - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000", "http://localhost:8099"]}
     ports:
       - "8000:8000"
     depends_on:
